@@ -1,31 +1,32 @@
 package core
 
 import (
-	"mtrang/utils"
 	"net"
 	"regexp"
+
+	"mtrang/utils"
 )
 
-// Lookup website address with given URL
+// Lookup website address with given URL.
 func AddrLookup(url string, debug bool) {
-	reg_match := regexp.MustCompile(`^(https?://)`)
-	url = reg_match.ReplaceAllString(url, "")
+	regMatch := regexp.MustCompile(`^(https?://)`)
+	url = regMatch.ReplaceAllString(url, "")
 
 	ips, err := net.LookupHost(url)
-
 	if err != nil {
 		if debug {
 			utils.Fatal("Failed to lookup host of: %s. Use --debug to show traceback", url)
-			return
 		} else {
 			utils.Fatal("Failed to lookup host of: %s\nTraceback: %s", url, err)
+
 			return
 		}
 	}
 
 	utils.Log("Address of %s:\n", url)
-	for _, address_str := range ips {
-		address := net.ParseIP(address_str)
+
+	for _, addressStr := range ips {
+		address := net.ParseIP(addressStr)
 
 		if address == nil {
 			continue
