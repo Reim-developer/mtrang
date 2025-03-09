@@ -31,9 +31,9 @@ jobs:
     - name: Build
       run: |
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          go build -v -o mtrang.exe ./...
+          go build -v -o mtrang.exe ./cmd/mtrang 
         else
-          go build -v -o mtrang ./...
+          go build -v -o mtrang ./cmd/mtrang 
         fi
       shell: bash
 
@@ -47,5 +47,5 @@ jobs:
         name: mtrang-${{ matrix.os }}
         path: |
           mtrang
-          mtrang.exe  # Bao gồm cả file .exe cho Windows
+          mtrang.exe
         retention-days: 7
