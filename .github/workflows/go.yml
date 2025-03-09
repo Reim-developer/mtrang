@@ -31,9 +31,9 @@ jobs:
     - name: Build
       run: |
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          go build -v -o mtrang.exe ./cmd/mtrang 
+          go build -v -o mtrang.exe . 
         else
-          go build -v -o mtrang ./cmd/mtrang 
+          go build -v -o mtrang .
         fi
       shell: bash
 
