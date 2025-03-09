@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// AddressCommand Display website Addresss with given domain
 func AddressCommand(cli *cobra.Command) {
 	var websiteURL string
 

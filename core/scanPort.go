@@ -11,7 +11,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-// Scan port of website with
+// ScanPort of website with
 // website IP address given.
 func ScanPort(target string, workers int, timeout int, debug bool) {
 	var wg sync.WaitGroup

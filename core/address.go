@@ -7,7 +7,7 @@ import (
 	"mtrang/utils"
 )
 
-// Lookup website address with given URL.
+// AddrLookup website address with given URL.
 func AddrLookup(url string, debug bool) {
 	regMatch := regexp.MustCompile(`^(https?://)`)
 	url = regMatch.ReplaceAllString(url, "")

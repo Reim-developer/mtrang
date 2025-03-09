@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ScanPortCommand scan Port of website with IP Address or website domain
 func ScanPortCommand(cli *cobra.Command) {
 	var port string
 	var channels int
