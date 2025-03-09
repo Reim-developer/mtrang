@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/spf13/cobra"
+
 	"mtrang/cli"
 	"mtrang/utils"
-
-	"github.com/spf13/cobra"
 )
 
 func main() {
@@ -12,16 +12,16 @@ func main() {
 		Use:   "mtrang",
 		Short: "Pentest Command Line Interface",
 
-		Run: func(cmd *cobra.Command, args []string) {
-			utils.Log("Try: mtrang help for more infomation")
+		Run: func(_ *cobra.Command, _ []string) {
+			utils.Log("Try: mtrang help for more information")
 		},
 	}
 
 	cli.VersionCommand(cmd)
 	cli.AddressCommand(cmd)
+	cli.ScanPortCommand(cmd)
 
 	if err := cmd.Execute(); err != nil {
 		utils.Fatal("Fatal: %s", err)
 	}
-
 }
