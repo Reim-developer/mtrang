@@ -14,9 +14,15 @@ import (
 // ScanPort of website with
 // website IP address given.
 func ScanPort(target string, workers int, timeout int, debug bool) {
+	const totalPorts = 1024
+	const batchSize = 100
+
 	var wg sync.WaitGroup
+	var mutex sync.Mutex
+	var openPorts []int
+	var completedPorts int32
 	limit := make(chan struct{}, workers)
-	var mu sync.Mutex
+	progressChan := make(chan int, totalPorts)
 
 	progressBar := progressbar.NewOptions(
 		1024,
@@ -33,54 +39,79 @@ func ScanPort(target string, workers int, timeout int, debug bool) {
 			BarEnd:        "|",
 		}),
 	)
+	batches := totalPorts / batchSize
 
-	resultChan := make(chan int, 1024)
-	debugInfoChan := make(chan string, 1024)
+	if totalPorts%batchSize != 0 {
+		batches++
+	}
 
 	go func() {
-		for info := range debugInfoChan {
-			if debug {
-				utils.Log("%s", info)
-			}
+		for progress := range progressChan {
+			progressBar.Set(progress)
 		}
 	}()
 
-	var completedPorts int32
-	for port := 1; port <= 1024; port++ {
+	for batch := 0; batch < batches; batch++ {
 		wg.Add(1)
-
-		go func(port int) {
+		go func(batch int) {
 			defer wg.Done()
-			limit <- struct{}{}
 
-			address := net.JoinHostPort(target, fmt.Sprintf("%d", port))
-			connect, err := net.DialTimeout("tcp", address, time.Duration(timeout)*time.Millisecond)
+			startPort := batch*batchSize + 1
+			endPort := startPort + batchSize - 1
 
-			if err != nil {
-				debugInfoChan <- fmt.Sprintf("[DEBUG] %s\n", err)
+			if endPort > totalPorts {
+				endPort = totalPorts
 			}
 
-			if err == nil {
-				mu.Lock()
-				resultChan <- port
-				mu.Unlock()
-				connect.Close()
-			}
+			var portWG sync.WaitGroup
+			currentTimeout := time.Duration(timeout) * time.Millisecond
+			for port := startPort; port <= endPort; port++ {
+				portWG.Add(1)
 
-			if !debug {
-				atomic.AddInt32(&completedPorts, 1)
-				progressBar.Set(int(atomic.LoadInt32(&completedPorts)))
-			}
+				go func(port int) {
+					limit <- struct{}{}
+					defer portWG.Done()
+					defer func() { <-limit }()
 
-			<-limit
-		}(port)
+					address := net.JoinHostPort(target, fmt.Sprint(port))
+					timeNow := time.Now()
+					connect, err := net.DialTimeout("tcp", address, currentTimeout)
+					latency := time.Since(timeNow)
+
+					if err != nil && debug {
+						utils.Log("[DEBUG] %s", err)
+					}
+
+					if err == nil {
+						mutex.Lock()
+						openPorts = append(openPorts, port)
+						mutex.Unlock()
+						connect.Close()
+
+						if latency < currentTimeout {
+							currentTimeout = min(latency*2, time.Duration(timeout)*time.Millisecond)
+						}
+					}
+
+					if !debug {
+						atomic.AddInt32(&completedPorts, 1)
+						progressChan <- int(atomic.LoadInt32(&completedPorts))
+					}
+
+				}(port)
+			}
+			portWG.Wait()
+		}(batch)
+	}
+	wg.Wait()
+	close(limit)
+
+	if !debug {
+		progressBar.Finish()
+		close(progressChan)
 	}
 
-	wg.Wait()
-	close(resultChan)
-	close(debugInfoChan)
-
-	for port := range resultChan {
+	for _, port := range openPorts {
 		utils.Log("[+] Open Port: %d", port)
 	}
 }
